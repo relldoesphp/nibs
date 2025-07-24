@@ -1,0 +1,5 @@
+name: 'NIBS Intranet Module'
+type: module
+description: 'To convince a wonderful person that I know how to code'
+core_version_requirement: '^9 || ^10' # Compatible with Drupal 9 and 10
+package: 'Custom'

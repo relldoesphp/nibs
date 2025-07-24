@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # Drupal Application
+  drupal_web:
+    build:
+      context: ./drupal
+      dockerfile: Dockerfile
+    container_name: drupal_web
+    ports:
+      - "8080:80" # Host port 8080 maps to container port 80 (Apache)
+    volumes:
+      # Mounts your local Drupal web root into the container
+      - ./drupal/web:/var/www/html/web
+      # Mounts your custom modules and themes
+      - ./drupal/modules/custom:/var/www/html/modules/custom
+      - ./drupal/themes/custom:/var/www/html/themes/custom
+      # Ensure permissions for Drupal's files directory
+      # This assumes 'files' is managed by Drupal within sites/default
+      - ./drupal/web/sites/default/files:/var/www/html/web/sites/default/files
+    depends_on:
+      - drupal_db # Ensures database starts before web app
+    environment:
+      # Drupal database connection details (used by drush site:install)
+      DRUPAL_CORE_PATH: /var/www/html/web
+      DRUPAL_DATABASE_HOST: drupal_db
+      DRUPAL_DATABASE_NAME: nibs_drupal
+      DRUPAL_DATABASE_USER: nibs_user
+      DRUPAL_DATABASE_PASSWORD: tyrellwillbeagreatemployee # REPLACE WITH A SECURE PASSWORD
+    # The command to execute on container startup (your custom script)
+    command: ["/usr/local/bin/startup.sh"]
+
+  # Drupal Database Setup (MySQL 8.0)
+  drupal_db:
+    image: mysql:8.0
+    container_name: drupal_db
+    environment:
+      # MySQL root password for initial setup
+      MYSQL_ROOT_PASSWORD: therootpassword # REPLACE WITH A SECURE PASSWORD
+      # Database and user for Drupal
+      MYSQL_DATABASE: nibs_drupal
+      MYSQL_USER: nibs_user
+      MYSQL_PASSWORD: tyrellwillbeagreatemployee # REPLACE WITH A SECURE PASSWORD
+    volumes:
+      # Persist database data to a named volume
+      - drupal_db_data:/var/lib/mysql
+
+  # Symfony Microservice Application
+  symfony_app:
+    build:
+      context: ./symfony
+      dockerfile: Dockerfile
+    container_name: symfony_app
+    ports:
+      - "8081:8000" # Host port 8081 maps to container port 8000 (Apache)
+    volumes:
+      # Mounts your local Symfony project into the container
+      - ./symfony:/var/www/html
+      # Ensure permissions for Symfony's cache and log directories
+      - ./symfony/var/cache:/var/www/html/var/cache
+      - ./symfony/var/log:/var/www/html/var/log
+    depends_on:
+      - symfony_db # Ensures database starts before microservice
+    environment:
+      # Symfony .env variables (overridden by docker-compose for container)
+      APP_ENV: dev
+      APP_SECRET: tyrellneedsanewpassword # REPLACE WITH A SECURE PASSWORD
+      # Database URL for Symfony's Doctrine ORM
+      DATABASE_URL: mysql://api_user:tyrellknowsalotaboutphp@symfony_db:3306/api_db
+
+  # Symfony Database Setup (MySQL 8.0)
+  symfony_db:
+    image: mysql:8.0
+    container_name: symfony_db
+    environment:
+      # MySQL root password for initial setup
+      MYSQL_ROOT_PASSWORD: therootpassword # REPLACE WITH A SECURE PASSWORD
+      # Database and user for Symfony microservice
+      MYSQL_DATABASE: api_db
+      MYSQL_USER: api_user
+      MYSQL_PASSWORD: tyrellknowsalotaboutphp # REPLACE WITH A SECURE PASSWORD
+    volumes:
+      # Persist database data to a named volume
+      - symfony_db_data:/var/lib/mysql
+
+# Named volumes for persistent database data
+volumes:
+  drupal_db_data:
+  symfony_db_data:

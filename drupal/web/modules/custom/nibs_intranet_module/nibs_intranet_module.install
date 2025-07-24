@@ -1,0 +1,248 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the News Article module.
+ */
+
+use Drupal\node\Entity\NodeType;
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\taxonomy\Entity\Vocabulary;
+use Drupal\Core\Entity\Entity\EntityFormDisplay;
+use Drupal\Core\Entity\Entity\EntityViewDisplay;
+
+/**
+ * Implements hook_install().
+ *
+ * Creates the 'News Article' content type and its fields.
+ */
+function news_article_module_install() {
+  // 1. Create the 'News Article' content type.
+  $node_type = NodeType::create([
+    'id' => 'news_article',
+    'name' => new TranslatableMarkup('News Article'),
+    'description' => new TranslatableMarkup('Used for internal news articles.'),
+    'help' => new TranslatableMarkup('News articles for the intranet portal.'),
+    'new_revision' => TRUE, // Create new revision by default
+    'display_submitted' => TRUE,
+  ]);
+  $node_type->save();
+
+  // 2. Add fields to the 'News Article' content type.
+
+  // Field: Body (already exists by default for new content types, but ensuring setup)
+  // For standard 'Body' field, you typically configure its widget/formatter, not create storage.
+  $form_display = EntityFormDisplay::load('node.news_article.default');
+  if ($form_display) {
+    $form_display->setComponent('body', [
+      'type' => 'text_textarea_with_summary',
+      'weight' => 2,
+      'settings' => [
+        'rows' => 9,
+        'summary_rows' => 3,
+        'placeholder' => '',
+      ],
+    ])->save();
+  }
+
+  $view_display = EntityViewDisplay::load('node.news_article.default');
+  if ($view_display) {
+    $view_display->setComponent('body', [
+      'type' => 'text_default',
+      'label' => 'hidden',
+      'weight' => 2,
+    ])->save();
+  }
+
+
+  // Field: Department (Taxonomy Reference)
+  // First, ensure the 'Department' vocabulary exists or create it.
+  $vid = 'department'; // Vocabulary machine name
+  $vocabulary = Vocabulary::load($vid);
+  if (empty($vocabulary)) {
+    $vocabulary = Vocabulary::create([
+      'vid' => $vid,
+      'name' => 'Department',
+      'description' => 'Departments for news articles.',
+    ]);
+    $vocabulary->save();
+  }
+
+  $field_storage_department = FieldStorageConfig::create([
+    'field_name' => 'field_department',
+    'entity_type' => 'node',
+    'type' => 'entity_reference',
+    'settings' => [
+      'target_type' => 'taxonomy_term',
+    ],
+  ]);
+  $field_storage_department->save();
+
+  $field_department = FieldConfig::create([
+    'field_storage' => $field_storage_department,
+    'bundle' => 'news_article',
+    'label' => new TranslatableMarkup('Department'),
+    'required' => TRUE,
+    'settings' => [
+      'handler' => 'default:taxonomy_term',
+      'handler_settings' => [
+        'target_bundles' => [
+          $vid => $vid,
+        ],
+        'auto_create' => FALSE, // Don't allow creation of new terms directly
+      ],
+    ],
+  ]);
+  $field_department->save();
+
+  // Field: Published Date
+  $field_storage_published_date = FieldStorageConfig::create([
+    'field_name' => 'field_published_date',
+    'entity_type' => 'node',
+    'type' => 'datetime', // Use 'datetime' for date and time
+    'settings' => [],
+  ]);
+  $field_storage_published_date->save();
+
+  $field_published_date = FieldConfig::create([
+    'field_storage' => $field_storage_published_date,
+    'bundle' => 'news_article',
+    'label' => new TranslatableMarkup('Published Date'),
+    'required' => TRUE,
+    'settings' => [],
+  ]);
+  $field_published_date->save();
+
+  // Field: Featured Image (Media Field)
+  $field_storage_featured_image = FieldStorageConfig::create([
+    'field_name' => 'field_featured_image',
+    'entity_type' => 'node',
+    'type' => 'entity_reference',
+    'settings' => [
+      'target_type' => 'media',
+    ],
+  ]);
+  $field_storage_featured_image->save();
+
+  $field_featured_image = FieldConfig::create([
+    'field_storage' => $field_storage_featured_image,
+    'bundle' => 'news_article',
+    'label' => new TranslatableMarkup('Featured Image'),
+    'required' => FALSE, // Image can be optional
+    'settings' => [
+      'handler' => 'default:media',
+      'handler_settings' => [
+        'target_bundles' => [
+          'image' => 'image', // Assuming you have an 'Image' media type
+        ],
+        'sort' => [
+          'field' => '_none',
+        ],
+        'auto_create' => FALSE,
+        'auto_create_bundle' => '',
+      ],
+    ],
+  ]);
+  $field_featured_image->save();
+
+
+  // 3. Configure form display for the new fields
+  $form_display = EntityFormDisplay::load('node.news_article.default');
+  if ($form_display) {
+    $form_display->setComponent('field_department', [
+      'type' => 'entity_reference_autocomplete',
+      'weight' => 3,
+      'settings' => [
+        'match_operator' => 'CONTAINS',
+        'size' => 60,
+        'placeholder' => '',
+      ],
+    ])->setComponent('field_published_date', [
+      'type' => 'datetime_default',
+      'weight' => 4,
+    ])->setComponent('field_featured_image', [
+      'type' => 'media_browser_widget', // Or 'entity_browser_entity_reference' if you use Entity Browser
+      'weight' => 5,
+      'settings' => [
+        'open' => TRUE,
+        'selection_mode' => 'selection_content',
+        'media_browser_id' => '0', // Default media browser
+        'compact_mode' => FALSE,
+        'show_edit_button' => TRUE,
+        'show_browse_button' => TRUE,
+        'show_remove_button' => TRUE,
+        'show_select_all_button' => FALSE,
+        'return_type' => 'entity_browser_dialog',
+        'entity_browser' => 'media_browser', // Ensure this matches your media browser entity ID
+      ],
+    ])->save();
+  }
+
+  // 4. Configure view display for the new fields
+  $view_display = EntityViewDisplay::load('node.news_article.default');
+  if ($view_display) {
+    $view_display->setComponent('field_department', [
+      'type' => 'entity_reference_label',
+      'label' => 'above',
+      'weight' => 3,
+    ])->setComponent('field_published_date', [
+      'type' => 'datetime_default',
+      'label' => 'above',
+      'settings' => [
+        'format_type' => 'medium', // Adjust format as needed
+      ],
+      'weight' => 4,
+    ])->setComponent('field_featured_image', [
+      'type' => 'entity_reference_entity_view',
+      'label' => 'hidden', // Or 'above'
+      'settings' => [
+        'view_mode' => 'thumbnail', // Or 'original', 'full' depending on your media view modes
+      ],
+      'weight' => 5,
+    ])->save();
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Deletes the 'News Article' content type and its fields upon module uninstallation.
+ */
+function news_article_module_uninstall() {
+  // 1. Delete the 'News Article' content type.
+  $node_type = NodeType::load('news_article');
+  if ($node_type) {
+    $node_type->delete();
+  }
+
+  // 2. Delete the custom fields.
+  $fields_to_delete = [
+    'field_department',
+    'field_published_date',
+    'field_featured_image',
+  ];
+
+  foreach ($fields_to_delete as $field_name) {
+    $field_storage = FieldStorageConfig::loadByName('node', $field_name);
+    if ($field_storage) {
+      $field_storage->delete();
+    }
+  }
+
+  // 3. Delete the 'Department' taxonomy vocabulary if it was created by this module
+  // and is no longer used by other modules.
+  $vid = 'department';
+  $vocabulary = Vocabulary::load($vid);
+  if ($vocabulary) {
+    // Add logic here to check if other modules depend on this vocabulary
+    // For simplicity, directly deleting it if it exists.
+    try {
+      $vocabulary->delete();
+    } catch (\Exception $e) {
+      // Log the exception if the vocabulary cannot be deleted due to dependencies.
+      \Drupal::logger('news_article_module')->error('Could not delete Department vocabulary: @message', ['@message' => $e->getMessage()]);
+    }
+  }
+}
