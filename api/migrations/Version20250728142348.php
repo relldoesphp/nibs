@@ -20,7 +20,7 @@ final class Version20250728142348 extends AbstractMigration
     public function up(Schema $schema): void
     {
         // This up() migration is auto-generated, please modify it to your needs
-        $this->addSql('INSERT INTO feedback (name, email, message, created_at, updated_at) VALUES (:name, :email, :message, :created_at, :updated_at)');
+        $this->addSql(/** @lang text */ 'INSERT INTO feedback (name, email, message, created_at, updated_at) VALUES (`:name`, :email, :message, :created_at, :updated_at)');
 
         $feedbackData = [
             [
