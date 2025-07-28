@@ -1,0 +1,14 @@
+# web/themes/custom/your_theme_name/your_theme_name.libraries.yml
+global-styling:
+  version: 1.x
+  css:
+    theme:
+      css/style.css: {}
+
+global-scripts:
+   version: 1.x
+   js:
+     js/script.js: {}
+   dependencies:
+     - core/jquery
+     - core/drupal

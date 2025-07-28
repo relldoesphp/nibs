@@ -1,0 +1,21 @@
+name: NIBS Theme
+type: theme
+description: A custom theme for the intranet portal.
+core_version_requirement: ^10
+base theme: olivero
+
+# Libraries defined in this theme.
+libraries:
+  - nibs_theme/global-styling
+  - nibs_theme/global-scripts
+
+# Regions define areas where blocks can be placed.
+regions:
+  header: 'Header'
+  primary_menu: 'Primary menu'
+  secondary_menu: 'Secondary menu'
+  breadcrumb: 'Breadcrumb'
+  content: 'Main content'
+  sidebar_first: 'Sidebar first'
+  sidebar_second: 'Sidebar second'
+  footer: 'Footer'

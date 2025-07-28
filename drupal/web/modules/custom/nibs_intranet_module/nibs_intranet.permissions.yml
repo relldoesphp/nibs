@@ -1,0 +1,5 @@
+# news_articles.permissions.yml
+create news article content:
+  title: 'Create News Article content'
+  description: 'Allow Create on News Article content.'
+  restrict access: true

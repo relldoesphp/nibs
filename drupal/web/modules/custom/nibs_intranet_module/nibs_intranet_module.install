@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the News Article module.
+ */
+
+use Drupal\node\Entity\NodeType;
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\taxonomy\Entity\Vocabulary;
+use Drupal\Core\Entity\Entity\EntityFormDisplay;
+use Drupal\Core\Entity\Entity\EntityViewDisplay;
+
+/**
+ * Implements hook_install().
+ *
+ * Creates the 'News Article' content type and its fields.
+ */
+function nibs_intranet_module_install() {
+
+}
